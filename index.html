@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SWOT-Analyse Tool</title>
+  <style>
+    :root {
+      --s: #16a34a; --s-bg: #f0fdf4; --s-border: #86efac; --s-light: #dcfce7; --s-mid: #bbf7d0;
+      --w: #dc2626; --w-bg: #fef2f2; --w-border: #fca5a5; --w-light: #fee2e2; --w-mid: #fecaca;
+      --o: #2563eb; --o-bg: #eff6ff; --o-border: #93c5fd; --o-light: #dbeafe; --o-mid: #bfdbfe;
+      --t: #d97706; --t-bg: #fffbeb; --t-border: #fcd34d; --t-light: #fef3c7; --t-mid: #fde68a;
+      --g50:#f9fafb; --g100:#f3f4f6; --g200:#e5e7eb; --g300:#d1d5db; --g400:#9ca3af;
+      --g500:#6b7280; --g600:#4b5563; --g700:#374151; --g800:#1f2937; --g900:#111827;
+      --r: 10px; --sh-sm: 0 1px 3px rgba(0,0,0,.08); --sh-md: 0 4px 12px rgba(0,0,0,.1);
+      --sh-lg: 0 10px 30px rgba(0,0,0,.15); --tr: all .2s ease; --hh: 64px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--g100); color: var(--g800);
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      height: var(--hh); background: white; border-bottom: 1px solid var(--g200);
+      display: flex; align-items: center; padding: 0 20px; gap: 12px;
+      position: sticky; top: 0; z-index: 100; box-shadow: var(--sh-sm);
+    }
+    .logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; color: var(--g900); white-space: nowrap; text-decoration: none; }
+    .logo-icon { width: 34px; height: 34px; background: var(--g900); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .logo-icon svg { width: 20px; height: 20px; color: white; }
+    .title-wrap { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 420px; }
+    #projectTitle {
+      flex: 1; border: 1px solid transparent; background: transparent;
+      font-size: 15px; font-weight: 600; color: var(--g700); padding: 6px 10px;
+      border-radius: 7px; transition: var(--tr); min-width: 0;
+    }
+    #projectTitle:hover { border-color: var(--g200); background: var(--g50); }
+    #projectTitle:focus { outline: none; border-color: #3b82f6; background: white; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+    .view-tabs { display: flex; gap: 3px; background: var(--g100); padding: 4px; border-radius: 9px; border: 1px solid var(--g200); }
+    .view-tab {
+      padding: 6px 12px; border-radius: 6px; border: none; background: transparent;
+      font-size: 12px; font-weight: 600; color: var(--g500); cursor: pointer;
+      transition: var(--tr); display: flex; align-items: center; gap: 5px; white-space: nowrap;
+    }
+    .view-tab svg { width: 13px; height: 13px; }
+    .view-tab.active { background: white; color: var(--g800); box-shadow: var(--sh-sm); }
+    .header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .completion-pill {
+      display: flex; align-items: center; gap: 7px; padding: 5px 12px;
+      background: var(--g50); border: 1px solid var(--g200); border-radius: 20px;
+      font-size: 12px; font-weight: 700; color: var(--g600);
+    }
+    .ring { width: 26px; height: 26px; transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: var(--g200); stroke-width: 3; }
+    .ring-prog { fill: none; stroke: #22c55e; stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset .5s ease; }
+    .btn {
+      display: flex; align-items: center; gap: 6px; padding: 7px 13px;
+      border-radius: 8px; border: 1px solid var(--g200); background: white;
+      font-size: 12px; font-weight: 600; color: var(--g600); cursor: pointer;
+      transition: var(--tr); white-space: nowrap; font-family: inherit;
+    }
+    .btn:hover { background: var(--g50); border-color: var(--g300); color: var(--g800); }
+    .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .btn-dark { background: var(--g800); color: white; border-color: var(--g800); }
+    .btn-dark:hover { background: var(--g900); border-color: var(--g900); color: white; }
+
+    /* ─── MAIN ─── */
+    main { flex: 1; padding: 18px; display: flex; gap: 14px; }
+
+    /* ─── CANVAS VIEW ─── */
+    #canvasView { flex: 1; display: flex; gap: 14px; min-width: 0; }
+    #canvasView.hidden { display: none; }
+
+    /* ─── SWOT GRID ─── */
+    .grid-wrap { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .axis-top { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 2px; }
+    .axis-label-top { text-align: center; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--g400); }
+    .axis-label-top.pos { color: #16a34a; }
+    .axis-label-top.neg { color: #dc2626; }
+    .grid-row-wrap { display: flex; gap: 4px; flex: 1; }
+    .axis-label-side {
+      writing-mode: vertical-rl; text-orientation: mixed;
+      font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--g400); display: flex; align-items: center; justify-content: center; width: 18px; flex-shrink: 0;
+    }
+    .axis-label-side.int { color: #6d28d9; }
+    .axis-label-side.ext { color: #0369a1; }
+    .swot-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 12px; }
+
+    /* ─── SWOT SECTION ─── */
+    .swot-section {
+      background: white; border-radius: var(--r); border: 2px solid var(--g200);
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: var(--sh-sm); transition: box-shadow .2s ease; min-height: 260px;
+    }
+    .swot-section:hover { box-shadow: var(--sh-md); }
+    .swot-section[data-section="s"] { border-color: var(--s-border); }
+    .swot-section[data-section="w"] { border-color: var(--w-border); }
+    .swot-section[data-section="o"] { border-color: var(--o-border); }
+    .swot-section[data-section="t"] { border-color: var(--t-border); }
+
+    .sec-header { padding: 12px 14px 8px; display: flex; align-items: flex-start; gap: 9px; }
+    .sec-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+    [data-section="s"] .sec-icon { background: var(--s-light); }
+    [data-section="w"] .sec-icon { background: var(--w-light); }
+    [data-section="o"] .sec-icon { background: var(--o-light); }
+    [data-section="t"] .sec-icon { background: var(--t-light); }
+    .sec-info { flex: 1; min-width: 0; }
+    .sec-title { font-size: 14px; font-weight: 800; letter-spacing: -.01em; }
+    [data-section="s"] .sec-title { color: var(--s); }
+    [data-section="w"] .sec-title { color: var(--w); }
+    [data-section="o"] .sec-title { color: var(--o); }
+    [data-section="t"] .sec-title { color: var(--t); }
+    .sec-sub { font-size: 10px; color: var(--g400); margin-top: 1px; font-weight: 500; }
+    .sec-actions { display: flex; gap: 4px; align-items: center; }
+    .sec-count { font-size: 11px; font-weight: 700; color: var(--g400); padding: 2px 7px; border-radius: 10px; background: var(--g100); }
+    .icon-btn {
+      width: 27px; height: 27px; border-radius: 7px; border: 1px solid var(--g200);
+      background: white; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: var(--tr); color: var(--g400); font-family: inherit;
+    }
+    .icon-btn:hover { background: var(--g50); color: var(--g600); border-color: var(--g300); }
+    .icon-btn svg { width: 13px; height: 13px; }
+    .sec-progress { height: 3px; background: var(--g100); margin: 0 14px 8px; border-radius: 2px; overflow: hidden; }
+    .sec-progress-bar { height: 100%; border-radius: 2px; width: 0; transition: width .5s ease; }
+    [data-section="s"] .sec-progress-bar { background: var(--s); }
+    [data-section="w"] .sec-progress-bar { background: var(--w); }
+    [data-section="o"] .sec-progress-bar { background: var(--o); }
+    [data-section="t"] .sec-progress-bar { background: var(--t); }
+
+    /* ─── ENTRIES ─── */
+    .entries-list { flex: 1; padding: 0 10px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+    .empty-hint { text-align: center; padding: 22px 10px; color: var(--g300); font-size: 11px; line-height: 1.6; }
+    .entry-card {
+      border: 1px solid var(--g200); border-radius: 8px; background: var(--g50);
+      padding: 8px 9px; display: flex; flex-direction: column; gap: 5px;
+      transition: var(--tr); animation: slideIn .18s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    .entry-card:hover { border-color: var(--g300); background: white; box-shadow: var(--sh-sm); }
+    .entry-top { display: flex; gap: 6px; align-items: flex-start; }
+    .entry-drag { color: var(--g300); cursor: grab; padding-top: 2px; display: flex; }
+    .entry-drag svg { width: 12px; height: 12px; }
+    .entry-text {
+      flex: 1; border: none; background: transparent; font-size: 13px;
+      color: var(--g700); resize: none; line-height: 1.5; font-family: inherit;
+      min-height: 32px; overflow: hidden;
+    }
+    .entry-text:focus { outline: none; }
+    .entry-text::placeholder { color: var(--g300); }
+    .del-btn {
+      width: 20px; height: 20px; border-radius: 5px; border: none; background: transparent;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--g300); transition: var(--tr); flex-shrink: 0; margin-top: 1px;
+    }
+    .del-btn:hover { color: #ef4444; background: #fef2f2; }
+    .del-btn svg { width: 12px; height: 12px; }
+    .entry-meta { display: flex; gap: 8px; align-items: center; }
+    .stars { display: flex; gap: 2px; }
+    .star { width: 13px; height: 13px; cursor: pointer; color: var(--g200); transition: color .1s; }
+    .star.on { color: #f59e0b; }
+    .impact-sel {
+      font-size: 10px; border: 1px solid var(--g200); border-radius: 5px;
+      background: white; color: var(--g500); padding: 2px 4px; cursor: pointer;
+      font-family: inherit; transition: var(--tr);
+    }
+    .impact-sel:focus { outline: none; border-color: #3b82f6; }
+    .entry-tag { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+    [data-section="s"] .entry-tag { background: var(--s-light); color: var(--s); }
+    [data-section="w"] .entry-tag { background: var(--w-light); color: var(--w); }
+    [data-section="o"] .entry-tag { background: var(--o-light); color: var(--o); }
+    [data-section="t"] .entry-tag { background: var(--t-light); color: var(--t); }
+    .add-btn {
+      margin: 0 10px 10px; padding: 7px; border: 1.5px dashed var(--g200);
+      border-radius: 8px; background: transparent; color: var(--g400); font-size: 12px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 5px; transition: var(--tr); font-family: inherit;
+    }
+    .add-btn:hover { border-color: var(--g400); color: var(--g600); background: var(--g50); }
+    [data-section="s"] .add-btn:hover { border-color: var(--s); color: var(--s); background: var(--s-bg); }
+    [data-section="w"] .add-btn:hover { border-color: var(--w); color: var(--w); background: var(--w-bg); }
+    [data-section="o"] .add-btn:hover { border-color: var(--o); color: var(--o); background: var(--o-bg); }
+    [data-section="t"] .add-btn:hover { border-color: var(--t); color: var(--t); background: var(--t-bg); }
+    .add-btn svg { width: 13px; height: 13px; }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar { width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; transition: var(--tr); }
+    .sidebar.collapsed { width: 0; overflow: hidden; opacity: 0; pointer-events: none; }
+    .sidebar-card { background: white; border-radius: var(--r); border: 1px solid var(--g200); overflow: hidden; box-shadow: var(--sh-sm); }
+    .card-hd { padding: 12px 14px; border-bottom: 1px solid var(--g100); display: flex; align-items: center; justify-content: space-between; }
+    .card-hd-title { font-size: 12px; font-weight: 800; color: var(--g700); letter-spacing: -.01em; text-transform: uppercase; letter-spacing: .06em; }
+    .card-body { padding: 13px 14px; }
+
+    /* ─── SCORE GRID ─── */
+    .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .score-cell { padding: 10px 8px; border-radius: 8px; text-align: center; }
+    .score-cell.s { background: var(--s-light); }
+    .score-cell.w { background: var(--w-light); }
+    .score-cell.o { background: var(--o-light); }
+    .score-cell.t { background: var(--t-light); }
+    .score-num { font-size: 24px; font-weight: 900; letter-spacing: -.03em; }
+    .score-cell.s .score-num { color: var(--s); }
+    .score-cell.w .score-num { color: var(--w); }
+    .score-cell.o .score-num { color: var(--o); }
+    .score-cell.t .score-num { color: var(--t); }
+    .score-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--g500); }
+    .overall-bar { height: 6px; background: var(--g100); border-radius: 3px; overflow: hidden; margin-top: 12px; }
+    .overall-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #3b82f6); border-radius: 3px; transition: width .6s ease; }
+    .overall-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--g500); margin-top: 5px; }
+
+    /* ─── INSIGHTS ─── */
+    .insight { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid var(--g100); font-size: 12px; color: var(--g600); line-height: 1.5; }
+    .insight:last-child { border-bottom: none; }
+    .insight-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .insight-dot.good { background: #22c55e; }
+    .insight-dot.warn { background: #f59e0b; }
+    .insight-dot.bad { background: #ef4444; }
+
+    /* ─── STRATEGIES ─── */
+    .strat-group { margin-bottom: 10px; }
+    .strat-group:last-child { margin-bottom: 0; }
+    .strat-lbl { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; padding: 4px 8px; border-radius: 6px; margin-bottom: 5px; }
+    .strat-lbl.so { background: #f3e8ff; color: #7c3aed; }
+    .strat-lbl.st { background: #e0f2fe; color: #0369a1; }
+    .strat-lbl.wo { background: #fff7ed; color: #c2410c; }
+    .strat-lbl.wt { background: #f1f5f9; color: #475569; }
+    .strat-item {
+      font-size: 11px; color: var(--g600); padding: 5px 8px; background: var(--g50);
+      border-radius: 6px; margin-bottom: 3px; border-left: 2px solid var(--g200); line-height: 1.5;
+    }
+    .strat-item.so { border-left-color: #7c3aed; }
+    .strat-item.st { border-left-color: #0369a1; }
+    .strat-item.wo { border-left-color: #c2410c; }
+    .strat-item.wt { border-left-color: #475569; }
+    .strat-empty { font-size: 11px; color: var(--g300); font-style: italic; padding: 4px 8px; }
+
+    /* ─── STRATEGY VIEW ─── */
+    #strategyView { flex: 1; display: none; flex-direction: column; gap: 14px; }
+    #strategyView.active { display: flex; }
+    .strat-intro { background: white; border-radius: var(--r); padding: 16px 20px; border: 1px solid var(--g200); box-shadow: var(--sh-sm); }
+    .strat-intro h2 { font-size: 15px; font-weight: 800; color: var(--g800); margin-bottom: 4px; }
+    .strat-intro p { font-size: 12px; color: var(--g500); line-height: 1.6; }
+    .strat-matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; }
+    .strat-quad {
+      background: white; border-radius: var(--r); border: 2px solid var(--g200);
+      overflow: hidden; box-shadow: var(--sh-sm); display: flex; flex-direction: column;
+    }
+    .strat-quad-hd { padding: 12px 16px; border-bottom: 1px solid var(--g100); }
+    .strat-quad-title { font-size: 13px; font-weight: 800; }
+    .strat-quad-desc { font-size: 10px; color: var(--g400); margin-top: 2px; }
+    .so .strat-quad-hd { background: #faf5ff; border-bottom-color: #e9d5ff; } .so .strat-quad-title { color: #7c3aed; }
+    .st .strat-quad-hd { background: #f0f9ff; border-bottom-color: #bae6fd; } .st .strat-quad-title { color: #0369a1; }
+    .wo .strat-quad-hd { background: #fff7ed; border-bottom-color: #fed7aa; } .wo .strat-quad-title { color: #c2410c; }
+    .wt .strat-quad-hd { background: #f8fafc; border-bottom-color: #e2e8f0; } .wt .strat-quad-title { color: #475569; }
+    .strat-quad-refs { padding: 10px 14px 6px; border-bottom: 1px solid var(--g100); display: flex; flex-wrap: wrap; gap: 4px; }
+    .strat-ref-tag { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+    .strat-quad-entries { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+    .strat-entry {
+      border: 1px solid var(--g200); border-radius: 7px; background: var(--g50);
+      display: flex; gap: 6px; align-items: flex-start; padding: 7px 8px;
+      transition: var(--tr); animation: slideIn .18s ease;
+    }
+    .strat-entry:hover { border-color: var(--g300); background: white; }
+    .strat-entry-ta {
+      flex: 1; border: none; background: transparent; font-size: 12px;
+      color: var(--g700); resize: none; line-height: 1.5; font-family: inherit; min-height: 30px;
+    }
+    .strat-entry-ta:focus { outline: none; }
+    .strat-entry-ta::placeholder { color: var(--g300); }
+    .strat-add-btn {
+      margin: 0 12px 10px; padding: 7px; border: 1.5px dashed var(--g200);
+      border-radius: 8px; background: transparent; color: var(--g400); font-size: 12px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 5px; transition: var(--tr); font-family: inherit;
+    }
+    .strat-add-btn:hover { border-color: var(--g400); color: var(--g600); background: var(--g50); }
+    .strat-add-btn svg { width: 13px; height: 13px; }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s ease;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: white; border-radius: 14px; width: 92%; max-width: 520px;
+      max-height: 82vh; overflow-y: auto; box-shadow: var(--sh-lg);
+      transform: scale(.95) translateY(8px); transition: transform .2s ease;
+    }
+    .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+    .modal-hd { padding: 18px 22px 14px; border-bottom: 1px solid var(--g100); display: flex; align-items: center; gap: 11px; }
+    .modal-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .modal-title { font-size: 16px; font-weight: 800; }
+    .modal-sub { font-size: 11px; color: var(--g400); margin-top: 2px; }
+    .modal-close {
+      margin-left: auto; width: 30px; height: 30px; border-radius: 7px;
+      border: none; background: var(--g100); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; color: var(--g500); transition: var(--tr);
+    }
+    .modal-close:hover { background: var(--g200); }
+    .modal-close svg { width: 14px; height: 14px; }
+    .modal-bd { padding: 18px 22px; }
+    .modal-sect { margin-bottom: 16px; }
+    .modal-sect:last-child { margin-bottom: 0; }
+    .modal-sect-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--g400); margin-bottom: 7px; }
+    .modal-sect p { font-size: 13px; color: var(--g600); line-height: 1.6; }
+    .modal-qs { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    .modal-qs li { font-size: 13px; color: var(--g600); padding: 7px 9px 7px 26px; background: var(--g50); border-radius: 7px; line-height: 1.5; position: relative; }
+    .modal-qs li::before { content: "→"; position: absolute; left: 8px; color: var(--g400); }
+    .modal-examples { display: flex; flex-direction: column; gap: 4px; }
+    .modal-example { font-size: 12px; color: var(--g500); padding: 5px 8px; background: var(--g50); border-radius: 6px; border-left: 2px solid var(--g200); font-style: italic; }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position: fixed; bottom: 20px; right: 20px; background: var(--g800); color: white;
+      padding: 10px 16px; border-radius: 9px; font-size: 13px; z-index: 2000;
+      transform: translateY(16px); opacity: 0; transition: all .3s ease;
+      box-shadow: var(--sh-md); pointer-events: none; display: flex; align-items: center; gap: 8px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ─── IMPORT DIALOG ─── */
+    .import-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s ease;
+    }
+    .import-overlay.open { opacity: 1; pointer-events: all; }
+    .import-box {
+      background: white; border-radius: 12px; width: 92%; max-width: 460px; padding: 24px;
+      box-shadow: var(--sh-lg); transform: scale(.95); transition: transform .2s ease;
+    }
+    .import-overlay.open .import-box { transform: scale(1); }
+    .import-box h3 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+    .import-box p { font-size: 12px; color: var(--g500); margin-bottom: 12px; line-height: 1.6; }
+    #importTextarea {
+      width: 100%; height: 120px; border: 1px solid var(--g200); border-radius: 8px;
+      padding: 10px; font-size: 12px; font-family: monospace; resize: vertical; margin-bottom: 12px;
+    }
+    #importTextarea:focus { outline: none; border-color: #3b82f6; }
+    .import-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* ─── PRINT ─── */
+    @media print {
+      header { position: relative; box-shadow: none; }
+      .header-right, .view-tabs { display: none; }
+      .sidebar { display: none; }
+      main { padding: 0; }
+      .swot-grid { page-break-inside: avoid; }
+      .swot-section { box-shadow: none; min-height: 0; }
+      .del-btn, .add-btn, .icon-btn, .entry-meta { display: none !important; }
+      .entry-card { break-inside: avoid; }
+      #strategyView { break-before: page; }
+    }
+
+    @media (max-width: 900px) {
+      main { flex-direction: column; padding: 12px; }
+      .sidebar { width: 100%; }
+      .strat-matrix { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .swot-grid { grid-template-columns: 1fr; }
+      .logo span { display: none; }
+      .view-tab span { display: none; }
+    }
+
+    /* ─── KI BUTTONS ─── */
+    .btn-ki {
+      background: linear-gradient(135deg, #6d28d9, #4f46e5) !important;
+      color: white !important; border-color: #4f46e5 !important;
+    }
+    .btn-ki:hover { background: linear-gradient(135deg, #7c3aed, #4338ca) !important; box-shadow: 0 4px 14px rgba(109,40,217,.35); transform: translateY(-1px); }
+    .btn-ki svg { stroke: white !important; }
+
+    /* ─── SHARED OVERLAY BASE ─── */
+    .ki-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,.72);
+      backdrop-filter: blur(5px); z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .25s ease;
+    }
+    .ki-overlay.open { opacity: 1; pointer-events: all; }
+    .hidden { display: none !important; }
+
+    /* ─── KI WIZARD ─── */
+    .wiz-container {
+      width: 92%; max-width: 980px; max-height: 92vh;
+      background: white; border-radius: 18px;
+      box-shadow: 0 30px 70px rgba(0,0,0,.28);
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .wiz-prog-bar { height: 4px; background: #ede9fe; flex-shrink: 0; }
+    .wiz-prog-fill { height: 100%; background: linear-gradient(90deg,#6d28d9,#4f46e5); transition: width .45s ease; width: 0; }
+    .wiz-step { flex: 1; overflow-y: auto; padding: 44px 48px; }
+
+    /* Step 1 */
+    .wiz-badge {
+      display: inline-block; padding: 3px 11px; border-radius: 20px;
+      background: #ede9fe; color: #6d28d9; font-size: 10.5px; font-weight: 800;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 18px;
+    }
+    .wiz-title { font-size: 26px; font-weight: 800; color: var(--g900); margin-bottom: 8px; }
+    .wiz-subtitle { font-size: 14px; color: var(--g500); max-width: 540px; line-height: 1.65; margin-bottom: 36px; }
+    .wiz-form { max-width: 560px; }
+    .wiz-field { margin-bottom: 22px; }
+    .wiz-label { display: block; font-size: 13px; font-weight: 600; color: var(--g700); margin-bottom: 7px; }
+    .wiz-label .req { color: #dc2626; }
+    .wiz-label .opt { color: var(--g400); font-weight: 400; font-size: 12px; }
+    .wiz-input, .wiz-textarea {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--g200); border-radius: 9px;
+      font-size: 14px; font-family: inherit; color: var(--g800);
+      background: white; transition: var(--tr);
+    }
+    .wiz-input:focus, .wiz-textarea:focus {
+      outline: none; border-color: #6d28d9;
+      box-shadow: 0 0 0 3px rgba(109,40,217,.12);
+    }
+    .wiz-textarea { resize: vertical; min-height: 82px; }
+    .wiz-field-hint { font-size: 11.5px; color: var(--g400); margin-top: 5px; }
+    .wiz-actions { display: flex; gap: 10px; margin-top: 30px; }
+    .wiz-btn-primary {
+      display: flex; align-items: center; gap: 8px; padding: 11px 22px;
+      background: linear-gradient(135deg,#6d28d9,#4f46e5); color: white;
+      border: none; border-radius: 9px; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: var(--tr); font-family: inherit;
+    }
+    .wiz-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(109,40,217,.38); }
+    .wiz-btn-primary svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .wiz-btn-primary:disabled { opacity: .55; transform: none; cursor: not-allowed; }
+    .wiz-btn-secondary {
+      display: flex; align-items: center; gap: 6px; padding: 11px 18px;
+      background: white; color: var(--g600); border: 1.5px solid var(--g200);
+      border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: var(--tr); font-family: inherit;
+    }
+    .wiz-btn-secondary:hover { background: var(--g50); color: var(--g800); }
+
+    /* Step 2: Loading */
+    .wiz-loading {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 340px; gap: 20px; text-align: center;
+    }
+    .wiz-spinner {
+      width: 52px; height: 52px; border: 4px solid var(--g100);
+      border-top-color: #6d28d9; border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .wiz-loading-title { font-size: 20px; font-weight: 700; color: var(--g800); }
+    .wiz-loading-sub { font-size: 14px; color: var(--g500); }
+    .wiz-loading-topic {
+      background: #ede9fe; color: #6d28d9; padding: 8px 20px;
+      border-radius: 20px; font-size: 14px; font-weight: 600; max-width: 440px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* Step 3: Refine layout */
+    .wiz-refine-layout { display: flex; min-height: 520px; overflow: hidden; }
+
+    /* SWOT preview panel */
+    .wiz-preview-panel {
+      width: 40%; background: var(--g50); border-right: 1px solid var(--g200);
+      padding: 28px 22px; overflow-y: auto; flex-shrink: 0;
+    }
+    .wiz-panel-label {
+      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--g400); margin-bottom: 10px;
+    }
+    .wiz-intro-text { font-size: 12px; color: var(--g500); line-height: 1.6; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--g200); }
+    .wiz-preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .wiz-pq {
+      background: white; border-radius: 8px; padding: 10px;
+      border: 1.5px solid var(--g200); min-height: 80px;
+    }
+    .wiz-pq.s { border-color: var(--s-border); background: var(--s-bg); }
+    .wiz-pq.w { border-color: var(--w-border); background: var(--w-bg); }
+    .wiz-pq.o { border-color: var(--o-border); background: var(--o-bg); }
+    .wiz-pq.t { border-color: var(--t-border); background: var(--t-bg); }
+    .wiz-pq-hd { font-size: 10px; font-weight: 700; margin-bottom: 7px; }
+    .wiz-pq.s .wiz-pq-hd { color: var(--s); }
+    .wiz-pq.w .wiz-pq-hd { color: var(--w); }
+    .wiz-pq.o .wiz-pq-hd { color: var(--o); }
+    .wiz-pq.t .wiz-pq-hd { color: var(--t); }
+    .wiz-pitem {
+      font-size: 10.5px; color: var(--g700); padding: 3px 6px; margin-bottom: 3px;
+      background: white; border-radius: 4px; border-left: 2.5px solid transparent;
+      line-height: 1.4;
+    }
+    .wiz-pitem.s { border-color: var(--s); }
+    .wiz-pitem.w { border-color: var(--w); }
+    .wiz-pitem.o { border-color: var(--o); }
+    .wiz-pitem.t { border-color: var(--t); }
+    .wiz-pitem.new { animation: slideIn .35s ease; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+
+    /* Chat panel */
+    .wiz-chat-panel {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 24px 28px; overflow: hidden; min-width: 0;
+    }
+    .wiz-chat-hd { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-shrink: 0; }
+    .wiz-q-badge {
+      display: inline-flex; align-items: center; padding: 4px 12px;
+      background: linear-gradient(135deg,#6d28d9,#4f46e5); color: white;
+      border-radius: 20px; font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .wiz-q-hint { font-size: 11px; color: var(--g400); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wiz-chat-msgs {
+      flex: 1; overflow-y: auto; margin-bottom: 14px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .wiz-msg {
+      max-width: 90%; padding: 10px 13px; border-radius: 11px;
+      font-size: 13.5px; line-height: 1.55; word-break: break-word;
+    }
+    .wiz-msg.ai {
+      background: var(--g100); color: var(--g700);
+      border-radius: 3px 11px 11px 11px; align-self: flex-start;
+    }
+    .wiz-msg.user {
+      background: linear-gradient(135deg,#6d28d9,#4f46e5); color: white;
+      border-radius: 11px 11px 3px 11px; align-self: flex-end;
+    }
+    .wiz-msg.typing { opacity: .55; font-style: italic; }
+    .wiz-insight {
+      display: flex; align-items: flex-start; gap: 8px;
+      background: #fef9c3; border-left: 3px solid #eab308;
+      padding: 8px 12px; border-radius: 0 8px 8px 0;
+      font-size: 12.5px; color: #713f12; align-self: flex-start;
+      max-width: 96%;
+    }
+    .wiz-insight-icon { flex-shrink: 0; }
+    .wiz-chat-input { flex-shrink: 0; }
+    .wiz-q-text {
+      font-size: 14px; font-weight: 600; color: var(--g800);
+      background: #ede9fe; border-radius: 9px; padding: 12px 14px;
+      margin-bottom: 10px; line-height: 1.5;
+    }
+    .wiz-input-row { display: flex; gap: 8px; align-items: flex-end; }
+    .wiz-answer {
+      flex: 1; padding: 10px 13px; border: 1.5px solid var(--g200);
+      border-radius: 9px; font-size: 13px; font-family: inherit; color: var(--g800);
+      resize: none; min-height: 46px; max-height: 120px; transition: var(--tr);
+    }
+    .wiz-answer:focus { outline: none; border-color: #6d28d9; box-shadow: 0 0 0 3px rgba(109,40,217,.12); }
+    .wiz-send {
+      width: 46px; height: 46px; border-radius: 9px; border: none;
+      background: linear-gradient(135deg,#6d28d9,#4f46e5); color: white;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: var(--tr);
+    }
+    .wiz-send:hover { transform: scale(1.06); }
+    .wiz-send:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .wiz-send svg { width: 18px; height: 18px; }
+    .wiz-done {
+      flex-shrink: 0; background: #f0fdf4; border: 1.5px solid #86efac;
+      border-radius: 10px; padding: 18px 20px;
+    }
+    .wiz-done-hd {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 15px; font-weight: 700; color: #16a34a; margin-bottom: 8px;
+    }
+    .wiz-done-hd svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .wiz-done p { font-size: 13px; color: var(--g500); margin-bottom: 14px; line-height: 1.5; }
+
+    /* ─── SUMMARY OVERLAY ─── */
+    .sum-container {
+      width: 94%; max-width: 820px; max-height: 92vh;
+      background: white; border-radius: 18px;
+      box-shadow: 0 30px 70px rgba(0,0,0,.28);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .sum-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 30px; border-bottom: 1px solid var(--g200); flex-shrink: 0;
+      gap: 16px;
+    }
+    .sum-hd-info { min-width: 0; }
+    .sum-hd-title { font-size: 19px; font-weight: 800; color: var(--g900); }
+    .sum-hd-topic { font-size: 13px; color: var(--g500); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sum-hd-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .sum-body { flex: 1; overflow-y: auto; padding: 32px; }
+    .sum-loading {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 300px; gap: 16px; color: var(--g500);
+      font-size: 14px;
+    }
+    .sum-content h2 {
+      font-size: 16px; font-weight: 800; color: var(--g900);
+      margin: 28px 0 12px; padding-bottom: 8px;
+      border-bottom: 2px solid var(--g100);
+    }
+    .sum-content h2:first-child { margin-top: 0; }
+    .sum-content h3 { font-size: 14px; font-weight: 700; color: #4f46e5; margin: 18px 0 8px; }
+    .sum-content h4 { font-size: 13px; font-weight: 600; color: var(--g600); margin: 12px 0 6px; }
+    .sum-content ul { margin: 0; padding: 0; list-style: none; }
+    .sum-content li {
+      display: flex; gap: 10px; padding: 7px 0;
+      font-size: 13.5px; color: var(--g700); line-height: 1.55;
+      border-bottom: 1px solid var(--g100);
+    }
+    .sum-content li:last-child { border-bottom: none; }
+    .sum-content li .num { font-weight: 800; color: #6d28d9; min-width: 24px; flex-shrink: 0; }
+    .sum-content p { font-size: 14px; color: var(--g700); line-height: 1.65; margin-bottom: 14px; }
+    .sum-content strong { font-weight: 700; color: var(--g900); }
+
+    @media (max-width: 760px) {
+      .wiz-refine-layout { flex-direction: column; }
+      .wiz-preview-panel { width: 100%; max-height: 220px; border-right: none; border-bottom: 1px solid var(--g200); }
+      .wiz-step { padding: 24px 20px; }
+    }
+    @media print {
+      .ki-overlay { display: none !important; }
+    }
+
+    /* ─── API KEY MODAL ─── */
+    .btn-key-set { background: #ede9fe !important; color: #6d28d9 !important; border-color: #c4b5fd !important; }
+    .key-box {
+      background: white; border-radius: 16px; padding: 36px; max-width: 460px; width: 92%;
+      box-shadow: 0 25px 60px rgba(0,0,0,.28);
+    }
+    .key-box h3 { font-size: 18px; font-weight: 800; color: var(--g900); margin-bottom: 8px; }
+    .key-box p { font-size: 13px; color: var(--g500); line-height: 1.65; margin-bottom: 22px; }
+    .key-inp {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--g200); border-radius: 9px;
+      font-size: 13px; font-family: monospace; color: var(--g800); margin-bottom: 6px; transition: var(--tr);
+    }
+    .key-inp:focus { outline: none; border-color: #6d28d9; box-shadow: 0 0 0 3px rgba(109,40,217,.12); }
+    .key-hint { font-size: 11.5px; color: var(--g400); margin-bottom: 20px; }
+    .key-hint a { color: #6d28d9; text-decoration: none; }
+    .key-hint a:hover { text-decoration: underline; }
+    .key-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a class="logo" href="#">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/>
+        <rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>
+      </svg>
+    </div>
+    <span>SWOT-Analyse</span>
+  </a>
+
+  <div class="title-wrap">
+    <input type="text" id="projectTitle" placeholder="Projektname eingeben…" value="Meine SWOT-Analyse">
+  </div>
+
+  <div class="view-tabs">
+    <button class="view-tab active" data-view="canvas" onclick="switchView('canvas')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Canvas</span>
+    </button>
+    <button class="view-tab" data-view="strategy" onclick="switchView('strategy')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <span>Strategien</span>
+    </button>
+  </div>
+
+  <div class="header-right">
+    <div class="completion-pill">
+      <svg class="ring" viewBox="0 0 28 28">
+        <circle class="ring-bg" cx="14" cy="14" r="11"/>
+        <circle class="ring-prog" id="ringProg" cx="14" cy="14" r="11" stroke-dasharray="69.1" stroke-dashoffset="69.1"/>
+      </svg>
+      <span id="completionPct">0%</span>
+    </div>
+    <button class="btn" onclick="toggleSidebar()" title="Analyse-Panel ein/ausblenden">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg>
+      Analyse
+    </button>
+    <button class="btn" onclick="exportJSON()" title="Als JSON exportieren">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+    <button class="btn" onclick="showImport()" title="JSON importieren">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import
+    </button>
+    <button class="btn btn-dark" onclick="window.print()" title="Drucken">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Drucken
+    </button>
+    <button class="btn" id="keyBtn" onclick="openKeyModal()" title="Anthropic API Key eingeben">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      API Key
+    </button>
+    <button class="btn btn-ki" onclick="openWizard()" title="KI-Assistent: SWOT interaktiv erarbeiten">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      KI-Assistent
+    </button>
+    <button class="btn btn-ki" onclick="openSummary()" title="KI-Zusammenfassung mit Strategieableitung">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      KI-Zusammenfassung
+    </button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+  <!-- ── CANVAS VIEW ── -->
+  <div id="canvasView" style="display:flex;flex:1;gap:14px;min-width:0;">
+
+    <!-- SWOT GRID -->
+    <div class="grid-wrap">
+      <div class="axis-top">
+        <div class="axis-label-top pos">+ Positiv</div>
+        <div class="axis-label-top neg">− Negativ</div>
+      </div>
+      <div class="grid-row-wrap" style="flex:1;">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="axis-label-side int" style="flex:1;">Intern</div>
+          <div class="axis-label-side ext" style="flex:1;">Extern</div>
+        </div>
+        <div class="swot-grid" id="swotGrid">
+          <!-- Sections injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+
+      <!-- Gesamtbewertung -->
+      <div class="sidebar-card">
+        <div class="card-hd"><span class="card-hd-title">Bewertung</span></div>
+        <div class="card-body">
+          <div class="score-grid">
+            <div class="score-cell s"><div class="score-num" id="sScore">0</div><div class="score-lbl">Stärken</div></div>
+            <div class="score-cell w"><div class="score-num" id="wScore">0</div><div class="score-lbl">Schwächen</div></div>
+            <div class="score-cell o"><div class="score-num" id="oScore">0</div><div class="score-lbl">Chancen</div></div>
+            <div class="score-cell t"><div class="score-num" id="tScore">0</div><div class="score-lbl">Risiken</div></div>
+          </div>
+          <div class="overall-bar"><div class="overall-fill" id="overallFill"></div></div>
+          <div class="overall-label"><span>Fortschritt</span><span id="overallPct">0%</span></div>
+        </div>
+      </div>
+
+      <!-- Erkenntnisse -->
+      <div class="sidebar-card">
+        <div class="card-hd"><span class="card-hd-title">Erkenntnisse</span></div>
+        <div class="card-body" id="insightsBody">
+          <div class="insight"><div class="insight-dot warn"></div><span>Füllen Sie die vier SWOT-Felder aus, um Erkenntnisse zu erhalten.</span></div>
+        </div>
+      </div>
+
+      <!-- Strategiehinweise -->
+      <div class="sidebar-card">
+        <div class="card-hd"><span class="card-hd-title">Strategieimpulse</span></div>
+        <div class="card-body" id="stratHints">
+          <span class="strat-empty">Noch zu wenig Einträge für automatische Strategieimpulse.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── STRATEGY VIEW ── -->
+  <div id="strategyView">
+    <div class="strat-intro">
+      <h2>Strategieentwicklung</h2>
+      <p>Kombinieren Sie Ihre SWOT-Faktoren zu konkreten Strategien. Die farbig markierten Felder zeigen die wichtigsten Einträge aus dem Canvas als Referenz.</p>
+    </div>
+    <div class="strat-matrix" id="stratMatrix">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-hd">
+      <div class="modal-icon" id="modalIcon"></div>
+      <div>
+        <div class="modal-title" id="modalTitle"></div>
+        <div class="modal-sub" id="modalSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModalBtn()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-bd" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- IMPORT OVERLAY -->
+<div class="import-overlay" id="importOverlay" onclick="closeImport(event)">
+  <div class="import-box">
+    <h3>JSON importieren</h3>
+    <p>Fügen Sie den JSON-Code einer exportierten SWOT-Analyse ein, um sie zu laden. Achtung: Die aktuellen Daten werden überschrieben.</p>
+    <textarea id="importTextarea" placeholder='{"title":"…","entries":…}'></textarea>
+    <div class="import-actions">
+      <button class="btn" onclick="closeImportBtn()">Abbrechen</button>
+      <button class="btn btn-dark" onclick="doImport()">Importieren</button>
+    </div>
+  </div>
+</div>
+
+<!-- API KEY OVERLAY -->
+<div id="keyOverlay" class="ki-overlay">
+  <div class="key-box">
+    <h3>🔑 Anthropic API Key</h3>
+    <p>Der KI-Assistent und die Zusammenfassung rufen die Anthropic API direkt aus dem Browser auf. Ihr Key wird nur lokal in diesem Browser gespeichert (localStorage) und nie an andere Server gesendet.</p>
+    <input id="keyInp" class="key-inp" type="password" placeholder="sk-ant-api03-…"
+      onkeydown="if(event.key==='Enter') saveKey()">
+    <div class="key-hint">
+      Key holen: <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>
+      &nbsp;·&nbsp; Wird nur in Ihrem Browser gespeichert
+    </div>
+    <div class="key-actions">
+      <button class="wiz-btn-secondary" onclick="closeKeyModal()">Abbrechen</button>
+      <button class="wiz-btn-primary" onclick="saveKey()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     KI WIZARD OVERLAY
+═══════════════════════════════════════════════════ -->
+<div id="wizardOverlay" class="ki-overlay">
+  <div class="wiz-container">
+    <div class="wiz-prog-bar"><div class="wiz-prog-fill" id="wizProgFill"></div></div>
+
+    <!-- STEP 1: Thema -->
+    <div class="wiz-step" id="wizStep-topic">
+      <div class="wiz-badge">Schritt 1 / 3 — Thema definieren</div>
+      <h2 class="wiz-title">KI-gestützte SWOT-Analyse</h2>
+      <p class="wiz-subtitle">Beschreiben Sie, was Sie analysieren möchten. Der KI-Berater erstellt eine fundierte erste Einschätzung und schärft diese gemeinsam mit Ihnen durch gezielte Fragen.</p>
+      <div class="wiz-form">
+        <div class="wiz-field">
+          <label class="wiz-label">Analysethema <span class="req">*</span></label>
+          <input id="wizTopic" class="wiz-input" type="text" maxlength="250"
+            placeholder="z.B. Unternehmen XYZ im Schweizer Markt · Produkt ABC · Digitalisierungsstrategie…"
+            onkeydown="if(event.key==='Enter') wizardGenerate()">
+          <div class="wiz-field-hint">Konkret formulieren: Wer oder was wird analysiert? In welchem Kontext?</div>
+        </div>
+        <div class="wiz-field">
+          <label class="wiz-label">Zusätzlicher Kontext <span class="opt">(optional)</span></label>
+          <textarea id="wizContext" class="wiz-textarea" rows="3"
+            placeholder="z.B. Branche, Unternehmensgrösse, Anlass der Analyse, aktuelle Herausforderungen, Marktumfeld…"></textarea>
+        </div>
+        <div class="wiz-actions">
+          <button class="wiz-btn-secondary" onclick="closeWizard()">Abbrechen</button>
+          <button class="wiz-btn-primary" onclick="wizardGenerate()" id="wizStartBtn">
+            Analyse starten
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Generieren -->
+    <div class="wiz-step hidden" id="wizStep-loading">
+      <div class="wiz-loading">
+        <div class="wiz-spinner"></div>
+        <h3 class="wiz-loading-title">KI-Berater analysiert…</h3>
+        <p class="wiz-loading-sub">Erste SWOT-Einschätzung wird erstellt</p>
+        <div class="wiz-loading-topic" id="wizLoadingTopic"></div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Verfeinern -->
+    <div class="wiz-step hidden" id="wizStep-refine" style="padding:0;overflow:hidden;">
+      <div class="wiz-refine-layout">
+
+        <!-- Links: SWOT Vorschau -->
+        <div class="wiz-preview-panel">
+          <div class="wiz-panel-label">SWOT-Entwurf</div>
+          <div class="wiz-intro-text" id="wizIntroText"></div>
+          <div class="wiz-preview-grid">
+            <div class="wiz-pq s">
+              <div class="wiz-pq-hd">💪 Stärken</div>
+              <div id="wiz-plist-s"></div>
+            </div>
+            <div class="wiz-pq w">
+              <div class="wiz-pq-hd">⚠️ Schwächen</div>
+              <div id="wiz-plist-w"></div>
+            </div>
+            <div class="wiz-pq o">
+              <div class="wiz-pq-hd">🚀 Chancen</div>
+              <div id="wiz-plist-o"></div>
+            </div>
+            <div class="wiz-pq t">
+              <div class="wiz-pq-hd">🛡️ Risiken</div>
+              <div id="wiz-plist-t"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rechts: Chat / Fragen -->
+        <div class="wiz-chat-panel">
+          <div class="wiz-chat-hd">
+            <span id="wizQBadge" class="wiz-q-badge">Frage 1 / 5</span>
+            <span id="wizQHint" class="wiz-q-hint"></span>
+          </div>
+          <div class="wiz-chat-msgs" id="wizMsgs"></div>
+
+          <!-- Eingabe -->
+          <div class="wiz-chat-input" id="wizInputArea">
+            <div class="wiz-q-text" id="wizQText"></div>
+            <div class="wiz-input-row">
+              <textarea id="wizAnswer" class="wiz-answer" placeholder="Ihre Antwort… (Enter = Senden, Shift+Enter = Zeilenumbruch)" rows="2"
+                onkeydown="wizHandleKey(event)"></textarea>
+              <button class="wiz-send" id="wizSendBtn" onclick="wizardAnswer()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Fertig-Bereich -->
+          <div class="wiz-done hidden" id="wizDone">
+            <div class="wiz-done-hd">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Analyse abgeschlossen
+            </div>
+            <p>Die SWOT-Analyse wurde durch Ihre Antworten verfeinert. Laden Sie das Ergebnis in den Canvas – dort können Sie weitere Faktoren hinzufügen und die Strategieplanung starten.</p>
+            <button class="wiz-btn-primary" onclick="wizardLoadCanvas()">
+              In Canvas laden
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     KI ZUSAMMENFASSUNG OVERLAY
+═══════════════════════════════════════════════════ -->
+<div id="summaryOverlay" class="ki-overlay">
+  <div class="sum-container">
+    <div class="sum-hd">
+      <div class="sum-hd-info">
+        <div class="sum-hd-title">Strategische Zusammenfassung</div>
+        <div class="sum-hd-topic" id="sumTopicLabel"></div>
+      </div>
+      <div class="sum-hd-actions">
+        <button class="btn" onclick="copySummary()" title="Text kopieren">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Kopieren
+        </button>
+        <button class="btn" onclick="window.print()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Drucken
+        </button>
+        <button class="btn btn-dark" onclick="closeSummary()">Schliessen</button>
+      </div>
+    </div>
+    <div class="sum-body">
+      <div class="sum-loading" id="sumLoading">
+        <div class="wiz-spinner"></div>
+        <span>KI-Berater erstellt strategische Zusammenfassung…</span>
+      </div>
+      <div class="sum-content" id="sumContent" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  CONFIGURATION
+// ═══════════════════════════════════════════════════
+const SECTIONS = {
+  s: {
+    label: 'Stärken', emoji: '💪', sub: 'Intern · Positiv',
+    color: '#16a34a', bg: '#f0fdf4', lightBg: '#dcfce7',
+    placeholder: 'z.B. Starke Marke, erfahrenes Team…',
+    desc: 'Interne positive Faktoren — was macht Ihr Unternehmen besonders gut?',
+    definition: 'Stärken sind interne Ressourcen, Fähigkeiten und Wettbewerbsvorteile, die Ihrem Unternehmen einen klaren Vorteil gegenüber der Konkurrenz verschaffen.',
+    questions: [
+      'Was macht Ihr Unternehmen besser als die Konkurrenz?',
+      'Welche einzigartigen Ressourcen oder Fähigkeiten besitzen Sie?',
+      'Warum wählen Kunden Sie gegenüber Mitbewerbern?',
+      'Was sind Ihre profitabelsten Produkte oder Dienstleistungen?',
+      'Welche Technologien, Patente oder Prozesse verschaffen Ihnen einen Vorteil?',
+      'Wie ist Ihre Markenreputation und Kundenbindung?',
+    ],
+    examples: ['Erfahrenes und motiviertes Team', 'Starke Kundenbindung & NPS', 'Einzigartiges Produktportfolio', 'Effiziente interne Prozesse'],
+  },
+  w: {
+    label: 'Schwächen', emoji: '⚠️', sub: 'Intern · Negativ',
+    color: '#dc2626', bg: '#fef2f2', lightBg: '#fee2e2',
+    placeholder: 'z.B. Hohe Produktionskosten, mangelnde Digitalisierung…',
+    desc: 'Interne negative Faktoren — was kann verbessert werden?',
+    definition: 'Schwächen sind interne Einschränkungen und Defizite, die die Leistungsfähigkeit des Unternehmens beeinträchtigen und Wettbewerbsnachteile verursachen.',
+    questions: [
+      'In welchen Bereichen ist die Konkurrenz besser aufgestellt?',
+      'Was könnte das Unternehmen verbessern?',
+      'Welche Ressourcen fehlen (Kapital, Talente, Technologie)?',
+      'Welche Prozesse sind ineffizient oder fehleranfällig?',
+      'Gibt es interne Konflikte oder Kommunikationsprobleme?',
+      'Welche negativen Kundenfeedbacks erhalten Sie regelmäßig?',
+    ],
+    examples: ['Hohe Abhängigkeit von wenigen Kunden', 'Mangelnde Digitalisierung', 'Veraltete Infrastruktur', 'Hohe Mitarbeiterfluktuation'],
+  },
+  o: {
+    label: 'Chancen', emoji: '🚀', sub: 'Extern · Positiv',
+    color: '#2563eb', bg: '#eff6ff', lightBg: '#dbeafe',
+    placeholder: 'z.B. Wachsender Markt, neue Technologien…',
+    desc: 'Externe positive Faktoren — welche Möglichkeiten gibt es?',
+    definition: 'Chancen sind externe Bedingungen und Trends im Marktumfeld, die das Unternehmen nutzen kann, um zu wachsen, neue Märkte zu erschließen oder Wettbewerbsvorteile auszubauen.',
+    questions: [
+      'Welche Markttrends können Sie für sich nutzen?',
+      'Welche neuen Zielgruppen oder Märkte sind noch unerschlossen?',
+      'Gibt es technologische Entwicklungen, die Vorteile bieten?',
+      'Wie verändert sich das Kundenverhalten zu Ihren Gunsten?',
+      'Welche gesetzlichen Änderungen eröffnen neue Möglichkeiten?',
+      'Haben Wettbewerber Lücken hinterlassen, die Sie füllen können?',
+    ],
+    examples: ['Wachsendes Marktsegment', 'Digitale Transformation als Treiber', 'Internationalisierungspotenzial', 'Schwäche eines Wettbewerbers nutzen'],
+  },
+  t: {
+    label: 'Risiken', emoji: '🛡️', sub: 'Extern · Negativ',
+    color: '#d97706', bg: '#fffbeb', lightBg: '#fef3c7',
+    placeholder: 'z.B. Neue Konkurrenten, regulatorische Änderungen…',
+    desc: 'Externe negative Faktoren — welche Bedrohungen lauern?',
+    definition: 'Risiken sind externe Bedrohungen und Herausforderungen, die die Marktposition oder den Geschäftserfolg des Unternehmens gefährden könnten.',
+    questions: [
+      'Welche neuen Wettbewerber könnten auftreten?',
+      'Welche Marktveränderungen bedrohen Ihr Geschäftsmodell?',
+      'Wie wirken sich wirtschaftliche Schwankungen auf Sie aus?',
+      'Welche regulatorischen oder gesetzlichen Risiken gibt es?',
+      'Gibt es technologische Entwicklungen, die Sie verdrängen könnten?',
+      'Wie abhängig sind Sie von einzelnen Lieferanten oder Partnern?',
+    ],
+    examples: ['Neue Marktteilnehmer mit Niedrigpreisangeboten', 'Regulatorische Verschärfungen', 'Rohstoffpreisschwankungen', 'Technologischer Wandel'],
+  },
+};
+
+const STRAT_TYPES = {
+  so: { label: 'SO – Ausbauen', desc: 'Stärken nutzen, um Chancen zu realisieren', cls: 'so', s: '#7c3aed', bg: '#faf5ff', tRef: 'Stärken', oRef: 'Chancen' },
+  st: { label: 'ST – Absichern', desc: 'Stärken einsetzen, um Risiken abzuwehren', cls: 'st', s: '#0369a1', bg: '#f0f9ff', tRef: 'Stärken', oRef: 'Risiken' },
+  wo: { label: 'WO – Aufholen', desc: 'Schwächen beheben, um Chancen zu nutzen', cls: 'wo', s: '#c2410c', bg: '#fff7ed', tRef: 'Schwächen', oRef: 'Chancen' },
+  wt: { label: 'WT – Verteidigen', desc: 'Schwächen minimieren, um Risiken zu begrenzen', cls: 'wt', s: '#475569', bg: '#f8fafc', tRef: 'Schwächen', oRef: 'Risiken' },
+};
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let state = {
+  title: 'Meine SWOT-Analyse',
+  entries: { s: [], w: [], o: [], t: [] },
+  strategies: { so: [], st: [], wo: [], wt: [] },
+  sidebarOpen: true,
+};
+
+let saveTimer = null;
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  buildGrid();
+  buildStratMatrix();
+  renderAll();
+  bindTitle();
+});
+
+function buildGrid() {
+  const grid = document.getElementById('swotGrid');
+  grid.innerHTML = '';
+  ['s','w','o','t'].forEach(sec => {
+    const cfg = SECTIONS[sec];
+    grid.innerHTML += `
+    <div class="swot-section" data-section="${sec}" id="sec-${sec}">
+      <div class="sec-header">
+        <div class="sec-icon">${cfg.emoji}</div>
+        <div class="sec-info">
+          <div class="sec-title">${cfg.label}</div>
+          <div class="sec-sub">${cfg.sub}</div>
+        </div>
+        <div class="sec-actions">
+          <span class="sec-count" id="cnt-${sec}">0</span>
+          <button class="icon-btn" onclick="openModal('${sec}')" title="Tipps & Leitfragen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="sec-progress"><div class="sec-progress-bar" id="prog-${sec}"></div></div>
+      <div class="entries-list" id="list-${sec}"></div>
+      <button class="add-btn" onclick="addEntry('${sec}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Faktor hinzufügen
+      </button>
+    </div>`;
+  });
+}
+
+function buildStratMatrix() {
+  const matrix = document.getElementById('stratMatrix');
+  matrix.innerHTML = '';
+  Object.entries(STRAT_TYPES).forEach(([key, cfg]) => {
+    matrix.innerHTML += `
+    <div class="strat-quad ${cfg.cls}" id="stratQuad-${key}">
+      <div class="strat-quad-hd">
+        <div class="strat-quad-title">${cfg.label}</div>
+        <div class="strat-quad-desc">${cfg.desc}</div>
+      </div>
+      <div class="strat-quad-refs" id="stratRefs-${key}"></div>
+      <div class="strat-quad-entries" id="stratList-${key}"></div>
+      <button class="strat-add-btn" onclick="addStratEntry('${key}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Strategie hinzufügen
+      </button>
+    </div>`;
+  });
+}
+
+function bindTitle() {
+  const inp = document.getElementById('projectTitle');
+  inp.value = state.title;
+  inp.addEventListener('input', () => { state.title = inp.value; scheduleSave(); });
+}
+
+// ═══════════════════════════════════════════════════
+//  ENTRY CRUD
+// ═══════════════════════════════════════════════════
+function addEntry(sec) {
+  const entry = { id: uid(), text: '', priority: 2, impact: 'Mittel' };
+  state.entries[sec].push(entry);
+  renderSection(sec);
+  scheduleSave();
+  // Focus new textarea
+  setTimeout(() => {
+    const el = document.querySelector(`#entry-${entry.id} .entry-text`);
+    if (el) { el.focus(); autoResize(el); }
+  }, 50);
+}
+
+function deleteEntry(sec, id) {
+  state.entries[sec] = state.entries[sec].filter(e => e.id !== id);
+  renderSection(sec);
+  renderSidebar();
+  scheduleSave();
+}
+
+function updateEntry(sec, id, field, value) {
+  const entry = state.entries[sec].find(e => e.id === id);
+  if (entry) { entry[field] = value; scheduleSave(); }
+  renderSidebar();
+}
+
+// ═══════════════════════════════════════════════════
+//  STRATEGY ENTRIES
+// ═══════════════════════════════════════════════════
+function addStratEntry(type) {
+  const entry = { id: uid(), text: '' };
+  state.strategies[type].push(entry);
+  renderStratQuad(type);
+  scheduleSave();
+  setTimeout(() => {
+    const el = document.querySelector(`#sentry-${entry.id}`);
+    if (el) el.focus();
+  }, 50);
+}
+
+function deleteStratEntry(type, id) {
+  state.strategies[type] = state.strategies[type].filter(e => e.id !== id);
+  renderStratQuad(type);
+  scheduleSave();
+}
+
+function updateStratEntry(type, id, value) {
+  const entry = state.strategies[type].find(e => e.id === id);
+  if (entry) { entry.text = value; scheduleSave(); }
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════
+function renderAll() {
+  ['s','w','o','t'].forEach(sec => renderSection(sec));
+  renderSidebar();
+  renderStratMatrix();
+  updateCompletion();
+}
+
+function renderSection(sec) {
+  const list = document.getElementById(`list-${sec}`);
+  const cnt = document.getElementById(`cnt-${sec}`);
+  const entries = state.entries[sec];
+  cnt.textContent = entries.length;
+
+  if (entries.length === 0) {
+    list.innerHTML = `<div class="empty-hint">${SECTIONS[sec].emoji}<br>Noch keine Einträge.<br>Klicken Sie auf „Faktor hinzufügen".</div>`;
+  } else {
+    list.innerHTML = entries.map(e => entryHTML(sec, e)).join('');
+    // bind events
+    entries.forEach(e => {
+      const card = document.getElementById(`entry-${e.id}`);
+      if (!card) return;
+      const ta = card.querySelector('.entry-text');
+      ta.addEventListener('input', () => { updateEntry(sec, e.id, 'text', ta.value); autoResize(ta); });
+      ta.addEventListener('focus', () => autoResize(ta));
+      autoResize(ta);
+      card.querySelectorAll('.star').forEach((star, i) => {
+        star.addEventListener('click', () => { setPriority(sec, e.id, i + 1); });
+        star.addEventListener('mouseenter', () => highlightStars(card, i + 1));
+        star.addEventListener('mouseleave', () => renderStars(card, e.priority));
+      });
+      const sel = card.querySelector('.impact-sel');
+      sel.addEventListener('change', () => updateEntry(sec, e.id, 'impact', sel.value));
+    });
+  }
+
+  const score = calcScore(sec);
+  document.getElementById(`prog-${sec}`).style.width = score + '%';
+  updateCompletion();
+}
+
+function entryHTML(sec, e) {
+  const impactColor = { Hoch: '#dc2626', Mittel: '#d97706', Niedrig: '#16a34a' }[e.impact] || '#9ca3af';
+  return `
+  <div class="entry-card" id="entry-${e.id}">
+    <div class="entry-top">
+      <textarea class="entry-text" placeholder="${SECTIONS[sec].placeholder}" rows="1">${escHtml(e.text)}</textarea>
+      <button class="del-btn" onclick="deleteEntry('${sec}','${e.id}')" title="Löschen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="entry-meta">
+      <div class="stars" data-entry="${e.id}">
+        ${[1,2,3].map(n => `<svg class="star ${n <= e.priority ? 'on' : ''}" data-val="${n}" viewBox="0 0 24 24" fill="${n <= e.priority ? '#f59e0b' : 'none'}" stroke="${n <= e.priority ? '#f59e0b' : '#d1d5db'}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`).join('')}
+      </div>
+      <select class="impact-sel">
+        <option ${e.impact==='Hoch'?'selected':''}>Hoch</option>
+        <option ${e.impact==='Mittel'?'selected':''}>Mittel</option>
+        <option ${e.impact==='Niedrig'?'selected':''}>Niedrig</option>
+      </select>
+      <span class="entry-tag">${e.impact}</span>
+    </div>
+  </div>`;
+}
+
+function setPriority(sec, id, val) {
+  const entry = state.entries[sec].find(e => e.id === id);
+  if (!entry) return;
+  entry.priority = val;
+  const card = document.getElementById(`entry-${id}`);
+  if (card) renderStars(card, val);
+  updateEntry(sec, id, 'priority', val);
+}
+
+function renderStars(card, val) {
+  card.querySelectorAll('.star').forEach((s, i) => {
+    const on = i < val;
+    s.classList.toggle('on', on);
+    s.setAttribute('fill', on ? '#f59e0b' : 'none');
+    s.setAttribute('stroke', on ? '#f59e0b' : '#d1d5db');
+  });
+}
+
+function highlightStars(card, val) {
+  card.querySelectorAll('.star').forEach((s, i) => {
+    const on = i < val;
+    s.setAttribute('fill', on ? '#fcd34d' : 'none');
+    s.setAttribute('stroke', on ? '#fcd34d' : '#d1d5db');
+  });
+}
+
+function renderStratMatrix() {
+  Object.keys(STRAT_TYPES).forEach(type => renderStratQuad(type));
+}
+
+function renderStratQuad(type) {
+  const cfg = STRAT_TYPES[type];
+  // Refs
+  const refsEl = document.getElementById(`stratRefs-${type}`);
+  const [a, b] = type === 'so' ? ['s','o'] : type === 'st' ? ['s','t'] : type === 'wo' ? ['w','o'] : ['w','t'];
+  const aEntries = state.entries[a].filter(e => e.text.trim()).slice(0, 3);
+  const bEntries = state.entries[b].filter(e => e.text.trim()).slice(0, 3);
+  const aCfg = SECTIONS[a], bCfg = SECTIONS[b];
+  refsEl.innerHTML = [
+    ...aEntries.map(e => `<span class="strat-ref-tag" style="background:${aCfg.lightBg};color:${aCfg.color};">${escHtml(e.text.substring(0,30))}${e.text.length>30?'…':''}</span>`),
+    ...bEntries.map(e => `<span class="strat-ref-tag" style="background:${bCfg.lightBg};color:${bCfg.color};">${escHtml(e.text.substring(0,30))}${e.text.length>30?'…':''}</span>`),
+  ].join('') || `<span style="font-size:10px;color:var(--g300);font-style:italic;">Füllen Sie die SWOT-Felder aus, um Referenzen zu sehen.</span>`;
+
+  // Entries
+  const listEl = document.getElementById(`stratList-${type}`);
+  const entries = state.strategies[type];
+  if (entries.length === 0) {
+    listEl.innerHTML = `<div class="empty-hint" style="padding:14px 0;">Noch keine Strategien. Klicken Sie auf „Strategie hinzufügen".</div>`;
+  } else {
+    listEl.innerHTML = entries.map(e => `
+      <div class="strat-entry" id="sentry-wrap-${e.id}">
+        <textarea class="strat-entry-ta" id="sentry-${e.id}" placeholder="Strategie formulieren…" rows="1">${escHtml(e.text)}</textarea>
+        <button class="del-btn" onclick="deleteStratEntry('${type}','${e.id}')" title="Löschen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`).join('');
+    entries.forEach(e => {
+      const ta = document.getElementById(`sentry-${e.id}`);
+      if (!ta) return;
+      ta.addEventListener('input', () => { updateStratEntry(type, e.id, ta.value); autoResize(ta); });
+      autoResize(ta);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  SIDEBAR
+// ═══════════════════════════════════════════════════
+function renderSidebar() {
+  renderScores();
+  renderInsights();
+  renderStratHints();
+}
+
+function renderScores() {
+  ['s','w','o','t'].forEach(sec => {
+    document.getElementById(`${sec}Score`).textContent = state.entries[sec].filter(e => e.text.trim()).length;
+  });
+  const overall = calcOverallPct();
+  document.getElementById('overallFill').style.width = overall + '%';
+  document.getElementById('overallPct').textContent = overall + '%';
+}
+
+function renderInsights() {
+  const body = document.getElementById('insightsBody');
+  const insights = generateInsights();
+  if (insights.length === 0) {
+    body.innerHTML = `<div class="insight"><div class="insight-dot warn"></div><span>Füllen Sie die vier SWOT-Felder aus, um Erkenntnisse zu erhalten.</span></div>`;
+    return;
+  }
+  body.innerHTML = insights.map(i =>
+    `<div class="insight"><div class="insight-dot ${i.type}"></div><span>${i.text}</span></div>`
+  ).join('');
+}
+
+function generateInsights() {
+  const counts = { s: filled('s'), w: filled('w'), o: filled('o'), t: filled('t') };
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  if (total === 0) return [];
+  const ins = [];
+
+  const avgPriority = (sec) => {
+    const es = state.entries[sec].filter(e => e.text.trim());
+    return es.length ? es.reduce((a, e) => a + e.priority, 0) / es.length : 0;
+  };
+
+  if (counts.s >= 4) ins.push({ type: 'good', text: `Starkes Stärken-Profil mit ${counts.s} Faktoren – gut aufgestellt.` });
+  else if (counts.s < 2) ins.push({ type: 'warn', text: 'Zu wenige Stärken definiert. Identifizieren Sie mehr interne Vorteile.' });
+
+  if (counts.w >= 4) ins.push({ type: 'warn', text: `${counts.w} Schwächen erkannt – priorisieren Sie die wichtigsten für Verbesserungen.` });
+  else if (counts.w < 2) ins.push({ type: 'warn', text: 'Zu wenige Schwächen benannt. Seien Sie selbstkritisch für eine realistische Analyse.' });
+
+  if (counts.o >= 4) ins.push({ type: 'good', text: `${counts.o} Chancen identifiziert – nutzen Sie diese im Strategiepanel.` });
+  else if (counts.o < 2) ins.push({ type: 'warn', text: 'Wenige Chancen definiert. Analysieren Sie Markt und Wettbewerb tiefer.' });
+
+  if (counts.t >= 4) ins.push({ type: 'bad', text: `${counts.t} Risiken erkannt – entwickeln Sie Gegenmaßnahmen unter "Strategien".` });
+  else if (counts.t < 2) ins.push({ type: 'warn', text: 'Wenige Risiken erfasst. Prüfen Sie externe Bedrohungen gründlicher.' });
+
+  if (counts.s > 0 && counts.o > 0 && counts.s >= counts.w) ins.push({ type: 'good', text: 'Offensive Strategie empfohlen: Nutzen Sie Stärken, um Chancen zu ergreifen (SO).' });
+  if (counts.w > counts.s && counts.t > counts.o) ins.push({ type: 'bad', text: 'Defensiver Handlungsbedarf: Schwächen und Risiken dominieren die Analyse.' });
+  if (avgPriority('s') > 2.3) ins.push({ type: 'good', text: 'Ihre Stärken sind hoch priorisiert – konsequenter Ressourceneinsatz empfohlen.' });
+
+  const strats = Object.values(state.strategies).reduce((a, v) => a + v.filter(e => e.text.trim()).length, 0);
+  if (total > 6 && strats === 0) ins.push({ type: 'warn', text: 'Genug Faktoren – leiten Sie jetzt konkrete Strategien im Strategie-Panel ab.' });
+  if (strats > 0) ins.push({ type: 'good', text: `${strats} Strategie(n) bereits formuliert – weiter so!` });
+
+  return ins.slice(0, 6);
+}
+
+function renderStratHints() {
+  const body = document.getElementById('stratHints');
+  const hints = generateStratHints();
+  if (hints.length === 0) {
+    body.innerHTML = `<span class="strat-empty">Noch zu wenig Einträge für automatische Strategieimpulse.</span>`;
+    return;
+  }
+  body.innerHTML = hints.map(h => `
+    <div class="strat-group">
+      <div class="strat-lbl ${h.type}">${h.label}</div>
+      ${h.items.map(i => `<div class="strat-item ${h.type}">${i}</div>`).join('')}
+    </div>`).join('');
+}
+
+function generateStratHints() {
+  const sE = state.entries.s.filter(e => e.text.trim()).sort((a,b) => b.priority - a.priority).slice(0,2);
+  const wE = state.entries.w.filter(e => e.text.trim()).sort((a,b) => b.priority - a.priority).slice(0,2);
+  const oE = state.entries.o.filter(e => e.text.trim()).sort((a,b) => b.priority - a.priority).slice(0,2);
+  const tE = state.entries.t.filter(e => e.text.trim()).sort((a,b) => b.priority - a.priority).slice(0,2);
+  const hints = [];
+
+  if (sE.length && oE.length) {
+    hints.push({ type: 'so', label: 'SO – Ausbauen', items: sE.flatMap(s => oE.map(o => `„${trunc(s.text)}" nutzen für „${trunc(o.text)}"`) ).slice(0,3) });
+  }
+  if (sE.length && tE.length) {
+    hints.push({ type: 'st', label: 'ST – Absichern', items: sE.flatMap(s => tE.map(t => `„${trunc(s.text)}" gegen „${trunc(t.text)}" einsetzen`) ).slice(0,3) });
+  }
+  if (wE.length && oE.length) {
+    hints.push({ type: 'wo', label: 'WO – Aufholen', items: wE.flatMap(w => oE.map(o => `„${trunc(w.text)}" beheben, um „${trunc(o.text)}" zu nutzen`) ).slice(0,3) });
+  }
+  if (wE.length && tE.length) {
+    hints.push({ type: 'wt', label: 'WT – Verteidigen', items: wE.flatMap(w => tE.map(t => `„${trunc(w.text)}" minimieren gegen „${trunc(t.text)}"`) ).slice(0,3) });
+  }
+  return hints;
+}
+
+// ═══════════════════════════════════════════════════
+//  SCORING
+// ═══════════════════════════════════════════════════
+function filled(sec) { return state.entries[sec].filter(e => e.text.trim()).length; }
+
+function calcScore(sec) {
+  const entries = state.entries[sec].filter(e => e.text.trim());
+  if (entries.length === 0) return 0;
+  const countScore = Math.min(entries.length / 5, 1) * 50;
+  const avgP = entries.reduce((a, e) => a + e.priority, 0) / entries.length;
+  const priorityScore = (avgP / 3) * 30;
+  const avgLen = entries.reduce((a, e) => a + e.text.trim().length, 0) / entries.length;
+  const lenScore = Math.min(avgLen / 60, 1) * 20;
+  return Math.round(countScore + priorityScore + lenScore);
+}
+
+function calcOverallPct() {
+  const scores = ['s','w','o','t'].map(calcScore);
+  return Math.round(scores.reduce((a, b) => a + b, 0) / 4);
+}
+
+function updateCompletion() {
+  const pct = calcOverallPct();
+  document.getElementById('completionPct').textContent = pct + '%';
+  const circ = 2 * Math.PI * 11;
+  const offset = circ - (pct / 100) * circ;
+  document.getElementById('ringProg').style.strokeDashoffset = offset;
+  renderSidebar();
+}
+
+// ═══════════════════════════════════════════════════
+//  VIEW SWITCHING
+// ═══════════════════════════════════════════════════
+function switchView(v) {
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
+  document.getElementById('canvasView').style.display = v === 'canvas' ? 'flex' : 'none';
+  document.getElementById('strategyView').classList.toggle('active', v === 'strategy');
+  if (v === 'strategy') renderStratMatrix();
+}
+
+function toggleSidebar() {
+  state.sidebarOpen = !state.sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('collapsed', !state.sidebarOpen);
+}
+
+// ═══════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════
+function openModal(sec) {
+  const cfg = SECTIONS[sec];
+  const overlay = document.getElementById('modalOverlay');
+  document.getElementById('modalIcon').textContent = cfg.emoji;
+  document.getElementById('modalIcon').style.background = cfg.lightBg;
+  document.getElementById('modalTitle').textContent = cfg.label;
+  document.getElementById('modalSub').textContent = cfg.sub;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-sect">
+      <div class="modal-sect-title">Definition</div>
+      <p>${cfg.definition}</p>
+    </div>
+    <div class="modal-sect">
+      <div class="modal-sect-title">Leitfragen</div>
+      <ul class="modal-qs">${cfg.questions.map(q => `<li>${q}</li>`).join('')}</ul>
+    </div>
+    <div class="modal-sect">
+      <div class="modal-sect-title">Typische Beispiele</div>
+      <div class="modal-examples">${cfg.examples.map(e => `<div class="modal-example">${e}</div>`).join('')}</div>
+    </div>`;
+  overlay.classList.add('open');
+}
+
+function closeModal(e) { if (e.target === document.getElementById('modalOverlay')) closeModalBtn(); }
+function closeModalBtn() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════
+//  IMPORT / EXPORT
+// ═══════════════════════════════════════════════════
+function exportJSON() {
+  const data = { title: state.title, entries: state.entries, strategies: state.strategies };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `swot-${slugify(state.title)}-${dateStr()}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('JSON exportiert');
+}
+
+function showImport() { document.getElementById('importOverlay').classList.add('open'); }
+function closeImport(e) { if (e.target === document.getElementById('importOverlay')) closeImportBtn(); }
+function closeImportBtn() { document.getElementById('importOverlay').classList.remove('open'); document.getElementById('importTextarea').value = ''; }
+function doImport() {
+  try {
+    const data = JSON.parse(document.getElementById('importTextarea').value);
+    if (!data.entries || !data.entries.s) throw new Error();
+    state.title = data.title || state.title;
+    state.entries = data.entries;
+    state.strategies = data.strategies || { so:[], st:[], wo:[], wt:[] };
+    document.getElementById('projectTitle').value = state.title;
+    renderAll();
+    saveState();
+    closeImportBtn();
+    toast('SWOT-Analyse erfolgreich importiert');
+  } catch {
+    alert('Ungültiges JSON-Format. Bitte prüfen Sie die Daten.');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  PERSISTENCE
+// ═══════════════════════════════════════════════════
+function saveState() {
+  try { localStorage.setItem('swot-tool-v2', JSON.stringify(state)); } catch {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('swot-tool-v2');
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    state.title = saved.title || state.title;
+    state.entries = { s: [], w: [], o: [], t: [], ...saved.entries };
+    state.strategies = { so: [], st: [], wo: [], wt: [], ...saved.strategies };
+    document.getElementById('projectTitle').value = state.title;
+  } catch {}
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 600);
+}
+
+// ═══════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════
+function uid() { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36); }
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function trunc(s, n = 25) { return s.length > n ? s.substring(0, n) + '…' : s; }
+function slugify(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'swot'; }
+function dateStr() { return new Date().toISOString().slice(0,10); }
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ESC to close modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModalBtn(); closeImportBtn(); closeWizard(); closeSummary(); closeKeyModal();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', _refreshKeyBtn);
+
+// ═══════════════════════════════════════════════════
+//  ANTHROPIC DIRECT API (no backend needed)
+// ═══════════════════════════════════════════════════
+const _API = 'https://api.anthropic.com/v1/messages';
+const _MODEL = 'claude-opus-4-6';
+const _SYS = `Du bist ein erfahrener Strategieberater mit 20 Jahren Consulting-Erfahrung. Du erstellst präzise, praxisorientierte SWOT-Analysen.
+Dein Stil: direkt und konkret, kritisch-analytisch, handlungsorientiert. Antworte immer auf Deutsch.`;
+
+// ─── API Key ──────────────────────────────────────
+function getKey() { return localStorage.getItem('swot-apikey') || ''; }
+function setKey(k) { localStorage.setItem('swot-apikey', k.trim()); _refreshKeyBtn(); }
+
+function _refreshKeyBtn() {
+  const k = getKey(), btn = document.getElementById('keyBtn');
+  if (!btn) return;
+  btn.classList.toggle('btn-key-set', !!k);
+  btn.title = k ? `API Key gesetzt (…${k.slice(-6)}) — klicken zum Ändern` : 'Anthropic API Key eingeben';
+}
+function openKeyModal() {
+  document.getElementById('keyInp').value = getKey();
+  document.getElementById('keyOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('keyInp').select(), 120);
+}
+function closeKeyModal() { document.getElementById('keyOverlay').classList.remove('open'); }
+function saveKey() {
+  const v = document.getElementById('keyInp').value.trim();
+  if (v && !v.startsWith('sk-')) { alert('Ungültiger Key — Anthropic-Keys beginnen mit "sk-"'); return; }
+  setKey(v); closeKeyModal();
+  toast(v ? 'API Key gespeichert ✓' : 'API Key entfernt');
+}
+
+// ─── API Helpers ──────────────────────────────────
+async function _callAI(messages, maxTokens, sys) {
+  const key = getKey();
+  if (!key) { openKeyModal(); throw new Error('Kein API Key. Bitte Key eingeben.'); }
+  const r = await fetch(_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json', 'x-api-key': key,
+      'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({ model: _MODEL, max_tokens: maxTokens, system: sys || _SYS, messages })
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error?.message || `API-Fehler ${r.status}`); }
+  const d = await r.json();
+  return d.content[0].text;
+}
+
+async function _streamAI(messages, maxTokens, onChunk, sys) {
+  const key = getKey();
+  if (!key) { openKeyModal(); throw new Error('Kein API Key. Bitte Key eingeben.'); }
+  const r = await fetch(_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json', 'x-api-key': key,
+      'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({ model: _MODEL, max_tokens: maxTokens, stream: true, system: sys || _SYS, messages })
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error?.message || `API-Fehler ${r.status}`); }
+  const reader = r.body.getReader(), decoder = new TextDecoder();
+  let buf = '', full = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop() || '';
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const d = line.slice(6).trim();
+      if (d === '[DONE]') continue;
+      try {
+        const ev = JSON.parse(d);
+        if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
+          full += ev.delta.text; onChunk(ev.delta.text, full);
+        }
+      } catch {}
+    }
+  }
+  return full;
+}
+
+// ═══════════════════════════════════════════════════
+//  KI WIZARD
+// ═══════════════════════════════════════════════════
+let wizState = {
+  topic: '', context: '',
+  swotDraft: { s: [], w: [], o: [], t: [] },
+  questions: [], currentQ: 0,
+  history: [], insights: [], intro: ''
+};
+let _chatId = 0;
+let _sumText = '';
+
+function openWizard() {
+  document.getElementById('wizardOverlay').classList.add('open');
+  _showWizStep('topic');
+  _wizProg(8);
+  setTimeout(() => { const el = document.getElementById('wizTopic'); if (el) el.focus(); }, 200);
+}
+function closeWizard() { document.getElementById('wizardOverlay').classList.remove('open'); }
+
+function _showWizStep(step) {
+  document.querySelectorAll('.wiz-step').forEach(s => s.classList.add('hidden'));
+  document.getElementById('wizStep-' + step).classList.remove('hidden');
+}
+function _wizProg(pct) { document.getElementById('wizProgFill').style.width = pct + '%'; }
+
+// ─── Step 1 → Generieren ────────────────────────────────────────────────────
+async function wizardGenerate() {
+  const topic = document.getElementById('wizTopic').value.trim();
+  const context = document.getElementById('wizContext').value.trim();
+  if (!topic) { document.getElementById('wizTopic').focus(); return; }
+
+  wizState = {
+    topic, context,
+    swotDraft: { s: [], w: [], o: [], t: [] },
+    questions: [], currentQ: 0, history: [], insights: [], intro: ''
+  };
+
+  document.getElementById('wizLoadingTopic').textContent = '"' + topic + '"';
+  _showWizStep('loading');
+  _wizProg(30);
+
+  const ctxLine = context ? `\nKontext: ${context}` : '';
+  const prompt = `Erstelle eine erste SWOT-Analyse für folgendes Thema.\n\nThema: ${topic}${ctxLine}\n\nAntworte NUR mit validem JSON (kein Markdown):\n{\n  "intro": "2-3 prägnante Sätze zur strategischen Ausgangslage",\n  "swot": {\n    "s": [{"text":"Stärke 1","detail":"Erläuterung"},{"text":"Stärke 2","detail":"Erläuterung"},{"text":"Stärke 3","detail":"Erläuterung"},{"text":"Stärke 4","detail":"Erläuterung"}],\n    "w": [{"text":"Schwäche 1","detail":"Erläuterung"},{"text":"Schwäche 2","detail":"Erläuterung"},{"text":"Schwäche 3","detail":"Erläuterung"}],\n    "o": [{"text":"Chance 1","detail":"Erläuterung"},{"text":"Chance 2","detail":"Erläuterung"},{"text":"Chance 3","detail":"Erläuterung"},{"text":"Chance 4","detail":"Erläuterung"}],\n    "t": [{"text":"Risiko 1","detail":"Erläuterung"},{"text":"Risiko 2","detail":"Erläuterung"},{"text":"Risiko 3","detail":"Erläuterung"}]\n  },\n  "questions": [\n    {"quadrant":"s","question":"Konkrete Frage zu Stärken","hint":"Warum strategisch wichtig"},\n    {"quadrant":"w","question":"Konkrete Frage zu Schwächen","hint":"Warum strategisch wichtig"},\n    {"quadrant":"o","question":"Konkrete Frage zu Chancen","hint":"Warum strategisch wichtig"},\n    {"quadrant":"t","question":"Konkrete Frage zu Risiken","hint":"Warum strategisch wichtig"},\n    {"quadrant":"general","question":"Übergreifende strategische Frage","hint":"Warum sie die Analyse abrundet"}\n  ]\n}`;
+
+  try {
+    const text = await _callAI([{ role: 'user', content: prompt }], 2500);
+    const m = text.replace(/^```json\s*/i,'').replace(/\s*```$/i,'').match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Kein JSON in der Antwort');
+    const d = JSON.parse(m[0]);
+
+    wizState.swotDraft = d.swot || { s: [], w: [], o: [], t: [] };
+    wizState.questions = d.questions || [];
+    wizState.intro = d.intro || '';
+
+    _renderWizPreview();
+    document.getElementById('wizMsgs').innerHTML = '';
+    _chatId = 0;
+    document.getElementById('wizDone').classList.add('hidden');
+    document.getElementById('wizInputArea').classList.remove('hidden');
+    _showNextQuestion();
+    _showWizStep('refine');
+    _wizProg(55);
+  } catch (err) {
+    alert('Fehler: ' + err.message);
+    _showWizStep('topic');
+    _wizProg(8);
+  }
+}
+
+// ─── SWOT Vorschau rendern ───────────────────────────────────────────────────
+function _renderWizPreview(highlight) {
+  document.getElementById('wizIntroText').textContent = wizState.intro;
+  ['s', 'w', 'o', 't'].forEach(q => {
+    const el = document.getElementById('wiz-plist-' + q);
+    el.innerHTML = wizState.swotDraft[q].map((item, i) => {
+      const isNew = highlight && highlight.q === q && highlight.idx === i;
+      return '<div class="wiz-pitem ' + q + (isNew ? ' new' : '') + '">' + escHtml(item.text) + '</div>';
+    }).join('');
+  });
+}
+
+// ─── Nächste Frage anzeigen ──────────────────────────────────────────────────
+function _showNextQuestion() {
+  if (wizState.currentQ >= wizState.questions.length) { _finishRefinement(); return; }
+  const q = wizState.questions[wizState.currentQ];
+  const total = wizState.questions.length;
+  document.getElementById('wizQBadge').textContent = 'Frage ' + (wizState.currentQ + 1) + ' / ' + total;
+  document.getElementById('wizQHint').textContent = q.hint || '';
+  document.getElementById('wizQText').textContent = q.question;
+  document.getElementById('wizAnswer').value = '';
+  document.getElementById('wizAnswer').disabled = false;
+  document.getElementById('wizSendBtn').disabled = false;
+  document.getElementById('wizAnswer').focus();
+}
+
+function wizHandleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); wizardAnswer(); }
+}
+
+// ─── Antwort senden ─────────────────────────────────────────────────────────
+async function wizardAnswer() {
+  const answer = document.getElementById('wizAnswer').value.trim();
+  if (!answer) return;
+  const q = wizState.questions[wizState.currentQ];
+  const sendBtn = document.getElementById('wizSendBtn');
+  const answerEl = document.getElementById('wizAnswer');
+  sendBtn.disabled = true;
+  answerEl.disabled = true;
+
+  _addWizMsg('user', answer);
+  answerEl.value = '';
+  const typingId = _addWizMsg('ai', '…', true);
+
+  const fmt = arr => arr.map(i => i.text).join(' | ') || '(leer)';
+  const refSys = `${_SYS}\n\nDu verfeinerst eine SWOT-Analyse für: "${wizState.topic}"\nStärken: ${fmt(wizState.swotDraft.s)}\nSchwächen: ${fmt(wizState.swotDraft.w)}\nChancen: ${fmt(wizState.swotDraft.o)}\nRisiken: ${fmt(wizState.swotDraft.t)}\n\nAntworte NUR mit validem JSON:\n{"response":"Direkte Reaktion (2-3 Sätze)","insight":"Ein strategischer Insight","swot_additions":{"s":[],"w":[],"o":[],"t":[]}}`;
+  const messages = [...wizState.history, { role: 'user', content: `Frage: "${q.question}"\n\nMeine Antwort: ${answer}` }];
+
+  const typingEl = document.getElementById(typingId);
+  if (typingEl) { typingEl.textContent = ''; typingEl.classList.remove('typing'); }
+
+  try {
+    const raw = await _streamAI(
+      messages, 900,
+      (chunk, accumulated) => {
+        const el = document.getElementById(typingId);
+        if (el) el.textContent = accumulated;
+        document.getElementById('wizMsgs').scrollTop = 9999;
+      },
+      refSys
+    );
+    let parsed = null;
+    try {
+      const clean = raw.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+      parsed = JSON.parse(clean);
+    } catch { /* Fallback: Nur Text anzeigen */ }
+
+    if (parsed) {
+      const el = document.getElementById(typingId);
+      if (el) el.textContent = parsed.response || raw;
+      if (parsed.insight && parsed.insight.trim()) {
+        _addWizInsight(parsed.insight);
+        wizState.insights.push(parsed.insight);
+      }
+      if (parsed.swot_additions) {
+        let lastHighlight = null;
+        ['s', 'w', 'o', 't'].forEach(k => {
+          const adds = parsed.swot_additions[k];
+          if (Array.isArray(adds)) {
+            adds.forEach(text => {
+              if (text && text.trim()) {
+                wizState.swotDraft[k].push({ text: text.trim() });
+                lastHighlight = { q: k, idx: wizState.swotDraft[k].length - 1 };
+              }
+            });
+          }
+        });
+        _renderWizPreview(lastHighlight);
+      }
+    }
+
+    wizState.history.push(
+      { role: 'user', content: 'Frage: "' + q.question + '"\n\nAntwort: ' + answer },
+      { role: 'assistant', content: raw }
+    );
+
+    wizState.currentQ++;
+    const pct = 55 + Math.round((wizState.currentQ / wizState.questions.length) * 35);
+    _wizProg(pct);
+
+    setTimeout(() => {
+      if (wizState.currentQ < wizState.questions.length) _showNextQuestion();
+      else _finishRefinement();
+    }, 350);
+
+  } catch (err) {
+    const el = document.getElementById(typingId);
+    if (el) { el.textContent = 'Fehler: ' + err.message; el.classList.add('typing'); }
+    sendBtn.disabled = false;
+    answerEl.disabled = false;
+  }
+}
+
+function _finishRefinement() {
+  document.getElementById('wizInputArea').classList.add('hidden');
+  document.getElementById('wizDone').classList.remove('hidden');
+  _wizProg(100);
+}
+
+// ─── In Canvas laden ─────────────────────────────────────────────────────────
+function wizardLoadCanvas() {
+  ['s', 'w', 'o', 't'].forEach(q => {
+    wizState.swotDraft[q].forEach(item => {
+      if (item.text && item.text.trim()) {
+        state.entries[q].push({ id: uid(), text: item.text.trim(), priority: 2, impact: 'Mittel' });
+      }
+    });
+  });
+  if (wizState.topic) {
+    state.title = wizState.topic;
+    document.getElementById('projectTitle').value = wizState.topic;
+  }
+  renderAll();
+  saveState();
+  closeWizard();
+  toast('KI-Analyse in Canvas geladen ✓');
+}
+
+// ─── Chat Helpers ─────────────────────────────────────────────────────────────
+function _addWizMsg(type, text, isTyping) {
+  const id = 'wm-' + (++_chatId);
+  const msgs = document.getElementById('wizMsgs');
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'wiz-msg ' + type + (isTyping ? ' typing' : '');
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return id;
+}
+function _addWizInsight(text) {
+  const msgs = document.getElementById('wizMsgs');
+  const div = document.createElement('div');
+  div.className = 'wiz-insight';
+  div.innerHTML = '<span class="wiz-insight-icon">💡</span>' + escHtml(text);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════
+//  KI ZUSAMMENFASSUNG
+// ═══════════════════════════════════════════════════
+async function openSummary() {
+  const total = ['s', 'w', 'o', 't'].reduce((n, q) =>
+    n + state.entries[q].filter(e => e.text.trim()).length, 0);
+  if (total < 4) {
+    toast('Bitte zuerst SWOT-Felder befüllen (mind. 4 Einträge)');
+    return;
+  }
+
+  _sumText = '';
+  document.getElementById('sumTopicLabel').textContent = state.title;
+  document.getElementById('sumContent').innerHTML = '';
+  document.getElementById('sumContent').style.display = 'none';
+  document.getElementById('sumLoading').style.display = 'flex';
+  document.getElementById('summaryOverlay').classList.add('open');
+
+  const fmtE = arr => arr.length ? arr.map((e,i) => `${i+1}. ${e.text}${e.priority>=3?' ★':''}`).join('\n') : '(keine Einträge)';
+  const iBlock = wizState.insights.length ? '\nInsights:\n' + wizState.insights.map(i=>`- ${i}`).join('\n') : '';
+  const S = state.entries.s.filter(e=>e.text.trim()), W = state.entries.w.filter(e=>e.text.trim());
+  const O = state.entries.o.filter(e=>e.text.trim()), T = state.entries.t.filter(e=>e.text.trim());
+  const sumPrompt = `Erstelle eine professionelle strategische Zusammenfassung.\n\nThema: ${state.title}${iBlock}\n\nSTÄRKEN (${S.length}):\n${fmtE(S)}\n\nSCHWÄCHEN (${W.length}):\n${fmtE(W)}\n\nCHANCEN (${O.length}):\n${fmtE(O)}\n\nRISIKEN (${T.length}):\n${fmtE(T)}\n\nStruktur (Markdown):\n## Strategische Ausgangslage\n## TOWS-Strategieoptionen\n### SO-Strategien — Ausbauen\n### ST-Strategien — Absichern\n### WO-Strategien — Aufholen\n### WT-Strategien — Verteidigen\n## Priorisierte Massnahmen\n### Sofort (0–3 Monate)\n### Kurzfristig (3–12 Monate)\n### Strategisch (1–3 Jahre)\n## Kritische Erfolgsfaktoren\n## Nächste Schritte\n\nSei konkret, keine Phrasen, spezifisch für dieses Thema.`;
+
+  const contentEl = document.getElementById('sumContent');
+  try {
+    document.getElementById('sumLoading').style.display = 'none';
+    contentEl.style.display = 'block';
+    await _streamAI(
+      [{ role: 'user', content: sumPrompt }], 3500,
+      (chunk, accumulated) => { _sumText = accumulated; contentEl.innerHTML = _renderMd(accumulated); }
+    );
+  } catch (err) {
+    document.getElementById('sumLoading').style.display = 'none';
+    contentEl.style.display = 'block';
+    contentEl.innerHTML = '<p style="color:#dc2626;font-weight:600">Fehler: ' + escHtml(err.message) + '</p>';
+  }
+}
+
+function closeSummary() { document.getElementById('summaryOverlay').classList.remove('open'); }
+
+function copySummary() {
+  const text = document.getElementById('sumContent').innerText;
+  navigator.clipboard.writeText(text)
+    .then(() => toast('Zusammenfassung kopiert ✓'))
+    .catch(() => toast('Kopieren fehlgeschlagen'));
+}
+
+// ─── Markdown Renderer ────────────────────────────────────────────────────────
+function _renderMd(raw) {
+  // Escape HTML first, then selectively convert markdown
+  let s = raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Headings
+  s = s.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+  s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  s = s.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  // Bold
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Numbered list items
+  s = s.replace(/^(\d+)\. (.+)$/gm, '<li class="num-li"><span class="num">$1.</span>$2</li>');
+  // Bullet list items
+  s = s.replace(/^[-–•*] (.+)$/gm, '<li>$1</li>');
+  // Wrap li sequences in ul
+  s = s.replace(/(<li[^>]*>[\s\S]*?<\/li>\n?)+/g, m => '<ul>' + m + '</ul>');
+  // Remaining text lines → paragraphs (skip empty, skip block tags)
+  const lines = s.split('\n');
+  const out = [];
+  for (const l of lines) {
+    const t = l.trim();
+    if (!t) continue;
+    if (/^<(h[2-4]|ul|li|\/ul|\/li)/.test(t)) { out.push(t); continue; }
+    out.push('<p>' + t + '</p>');
+  }
+  return out.join('\n');
+}
+</script>
+</body>
+</html>
